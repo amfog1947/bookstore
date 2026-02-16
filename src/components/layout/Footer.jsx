@@ -1,5 +1,7 @@
 ﻿import { Link } from "react-router-dom";
 
+import shelfVerseLogo from "../../shelfverse-logo.png.png";
+
 export default function Footer() {
   const year = new Date().getFullYear();
 
@@ -7,7 +9,10 @@ export default function Footer() {
     <footer className="site-footer">
       <div className="footer-inner">
         <div className="footer-col brand-col">
-          <p>ShelfVerse</p>
+          <div className="footer-brand-lockup">
+            <img className="footer-logo-img" src={shelfVerseLogo} alt="ShelfVerse logo" />
+            <p>ShelfVerse</p>
+          </div>
           <span>Modern bookstore platform built with React + Firebase.</span>
         </div>
 
@@ -24,7 +29,7 @@ export default function Footer() {
         <div className="footer-col">
           <h4>Contact</h4>
           <div className="footer-links">
-            <a href="mailto:support@mtechbookstore.com">support@mtechbookstore.com</a>
+            <a href="mailto:support@shelfverse.com">support@shelfverse.com</a>
             <span>Mon - Sat, 9:00 AM - 8:00 PM</span>
             <span>India</span>
           </div>

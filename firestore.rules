@@ -31,6 +31,20 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /recommendations/{recommendationId} {
+      allow create: if isSignedIn()
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.title is string
+                    && request.resource.data.author is string
+                    && request.resource.data.reason is string
+                    && request.resource.data.userEmail is string
+                    && request.resource.data.userName is string
+                    && request.resource.data.createdAt == request.time;
+
+      allow read: if isSignedIn();
+      allow update, delete: if false;
+    }
+
     match /purchases/{purchaseId} {
       allow create: if isSignedIn()
                     && request.resource.data.userId == request.auth.uid

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { db } from "../../firebase";
 import { formatDateDDMMYYYY, formatInr } from "../../utils/format";
+import shelfVerseLogo from "../../shelfverse-logo.png.png";
 
 function toSafePdfText(value) {
   return String(value)
@@ -175,11 +176,7 @@ export default function ReceiptPage() {
     <section className="receipt reveal" id="receipt-area">
       <div className="receipt-content">
         <div className="receipt-brand">
-          <span className="logo-stack">
-            <span className="logo-dot one" />
-            <span className="logo-dot two" />
-            <span className="logo-letter">SV</span>
-          </span>
+          <img className="receipt-logo-img" src={shelfVerseLogo} alt="ShelfVerse logo" />
           <div>
             <p className="receipt-brand-name">ShelfVerse</p>
             <p className="receipt-brand-sub">Digital Purchase Receipt</p>

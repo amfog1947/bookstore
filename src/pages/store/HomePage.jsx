@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { collection, getDocs, orderBy, query } from "firebase/firestore";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
+import { addDoc, collection, getDocs, limit, onSnapshot, orderBy, query, serverTimestamp } from "firebase/firestore";
 import BookCard from "../../components/BookCard";
+import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
 import { useWishlist } from "../../context/WishlistContext";
 import { fallbackBooks } from "../../data/fallbackBooks";
@@ -57,6 +58,14 @@ export default function HomePage() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [sortBy, setSortBy] = useState("title");
+  const [recTitle, setRecTitle] = useState("");
+  const [recAuthor, setRecAuthor] = useState("");
+  const [recReason, setRecReason] = useState("");
+  const [savingRec, setSavingRec] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [recommendations, setRecommendations] = useState([]);
+  const [recLoading, setRecLoading] = useState(true);
+  const { currentUser, userProfile } = useAuth();
   const { addToCart } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
 
@@ -90,6 +99,33 @@ export default function HomePage() {
     fetchBooks();
   }, []);
 
+  useEffect(() => {
+    const q = query(collection(db, "recommendations"), orderBy("createdAt", "desc"), limit(6));
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        setRecommendations(
+          snap.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }))
+        );
+        setRecLoading(false);
+      },
+      () => {
+        setRecLoading(false);
+      }
+    );
+
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    if (!toast) return undefined;
+    const timer = setTimeout(() => setToast(null), 2400);
+    return () => clearTimeout(timer);
+  }, [toast]);
+
   const categoryOptions = useMemo(() => {
     const unique = Array.from(new Set(books.map((book) => book.category || "General")));
     return [{ value: "All", label: "All" }, ...unique.map((item) => ({ value: item, label: item }))];
@@ -122,6 +158,51 @@ export default function HomePage() {
       return (a.title || "").localeCompare(b.title || "");
     });
   }, [books, search, category, sortBy]);
+
+  const submitRecommendation = async (event) => {
+    event.preventDefault();
+    const title = recTitle.trim();
+    const author = recAuthor.trim();
+    const reason = recReason.trim();
+
+    if (!title || !author || !reason || !currentUser) {
+      setToast({ type: "error", text: "Please fill title, author and reason." });
+      return;
+    }
+
+    setSavingRec(true);
+
+    try {
+      await addDoc(collection(db, "recommendations"), {
+        title,
+        author,
+        reason,
+        userId: currentUser.uid,
+        userEmail: currentUser.email || "",
+        userName: (userProfile?.fullName || "").trim() || currentUser.email || "Reader",
+        createdAt: serverTimestamp(),
+      });
+
+      setRecTitle("");
+      setRecAuthor("");
+      setRecReason("");
+      setToast({ type: "success", text: "Recommendation saved successfully." });
+    } catch (error) {
+      setToast({ type: "error", text: "Could not save recommendation right now." });
+    } finally {
+      setSavingRec(false);
+    }
+  };
+
+  const formatRecommendationTime = (value) => {
+    if (!value?.toDate) return "Just now";
+    const date = value.toDate();
+    return new Intl.DateTimeFormat("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }).format(date);
+  };
 
   return (
     <section className="page-stack">
@@ -166,6 +247,62 @@ export default function HomePage() {
             <p>No books match your filters.</p>
           </div>
         )}
+      </section>
+
+      <section className="recommend-wrap reveal">
+        {toast ? (
+          <div className={toast.type === "error" ? "toast toast-error" : "toast toast-success"}>{toast.text}</div>
+        ) : null}
+
+        <div className="recommend-form-shell">
+          <h2>Recommend a Book</h2>
+          <p className="subtitle">Share books you want added. Your recommendation is saved to Firebase.</p>
+          <form className="recommend-form" onSubmit={submitRecommendation}>
+            <input
+              value={recTitle}
+              onChange={(event) => setRecTitle(event.target.value)}
+              placeholder="Book title"
+              maxLength={100}
+            />
+            <input
+              value={recAuthor}
+              onChange={(event) => setRecAuthor(event.target.value)}
+              placeholder="Author"
+              maxLength={80}
+            />
+            <input
+              value={recReason}
+              onChange={(event) => setRecReason(event.target.value)}
+              placeholder="Why do you recommend this?"
+              maxLength={220}
+            />
+            <button className="btn" type="submit" disabled={savingRec}>
+              {savingRec ? "Saving..." : "Save Recommendation"}
+            </button>
+          </form>
+        </div>
+
+        <div className="recommend-list-shell">
+          <h3>Community Recommendations</h3>
+          {recLoading ? (
+            <p>Loading recommendations...</p>
+          ) : recommendations.length ? (
+            <div className="recommend-list">
+              {recommendations.map((item) => (
+                <article key={item.id} className="recommend-item">
+                  <h4>{item.title}</h4>
+                  <p className="recommend-meta">by {item.author}</p>
+                  <p className="recommend-reason">{item.reason}</p>
+                  <p className="recommend-meta">
+                    {item.userName} • {formatRecommendationTime(item.createdAt)}
+                  </p>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p>No recommendations yet.</p>
+          )}
+        </div>
       </section>
     </section>
   );

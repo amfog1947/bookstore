@@ -8,6 +8,7 @@ import ProtectedRoute from "./components/routing/ProtectedRoute";
 import PublicRoute from "./components/routing/PublicRoute";
 
 const SettingsPage = lazy(() => import("./pages/account/SettingsPage"));
+const HelpPage = lazy(() => import("./pages/account/HelpPage"));
 const AdminBooksPage = lazy(() => import("./pages/admin/AdminBooksPage"));
 const LoginPage = lazy(() => import("./pages/auth/LoginPage"));
 const SignupPage = lazy(() => import("./pages/auth/SignupPage"));
@@ -89,6 +90,14 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <SettingsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/help"
+              element={
+                <ProtectedRoute>
+                  <HelpPage />
                 </ProtectedRoute>
               }
             />

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
 import { useWishlist } from "../../context/WishlistContext";
+import shelfVerseLogo from "../../shelfverse-logo.png.png";
 
 export default function Navbar() {
   const { currentUser, userProfile, logout, isAdmin } = useAuth();
@@ -33,11 +34,7 @@ export default function Navbar() {
     <header className="nav-shell">
       <nav className={currentUser ? "nav signed-in" : "nav signed-out"}>
         <NavLink to={currentUser ? "/" : "/login"} className="brand">
-          <span className="logo-stack">
-            <span className="logo-dot one" />
-            <span className="logo-dot two" />
-            <span className="logo-letter">SV</span>
-          </span>
+          <img className="brand-logo-img" src={shelfVerseLogo} alt="ShelfVerse logo" />
           <span className="brand-name">ShelfVerse</span>
         </NavLink>
 
@@ -85,7 +82,7 @@ export default function Navbar() {
                     className="settings-item"
                     onClick={() => {
                       setOpenSettings(false);
-                      navigate("/settings?tab=account");
+                      navigate("/settings");
                     }}
                   >
                     Account
@@ -95,7 +92,7 @@ export default function Navbar() {
                     className="settings-item"
                     onClick={() => {
                       setOpenSettings(false);
-                      navigate("/settings?tab=help");
+                      navigate("/help");
                     }}
                   >
                     Help

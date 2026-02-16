@@ -1,4 +1,4 @@
-﻿# MTech Bookstore (React + Firebase)
+# ShelfVerse (React + Firebase)
 
 A React bookstore UI where users can:
 - Signup/Login with Firebase Authentication
@@ -54,3 +54,4 @@ firebase deploy --only firestore:rules
 ```
 
 If you do not use admin custom claims yet, temporarily change `books` write rule to `request.auth != null` for development.
+
