@@ -1084,6 +1084,14 @@ select {
     width: 100%;
     text-align: left;
   }
+
+  .gateway-methods {
+    grid-template-columns: 1fr;
+  }
+
+  .gateway-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 .book-top-row {
@@ -1154,24 +1162,70 @@ select {
 
 .payment-box {
   margin: 0.5rem 0;
-  padding: 0.8rem;
-  border-radius: 12px;
-  border: 1px solid var(--line);
-  background: #ffffff;
+  padding: 0.9rem;
+  border-radius: 14px;
+  border: 1px solid rgba(15, 118, 110, 0.2);
+  background: linear-gradient(170deg, #ffffff, #f7fbf9);
   display: grid;
-  gap: 0.55rem;
+  gap: 0.7rem;
 }
 
 .payment-box h3 {
   margin: 0;
 }
 
-.payment-select {
-  position: relative;
+.gateway-head {
+  display: grid;
+  gap: 0.25rem;
 }
 
-.payment-select .custom-select-menu {
-  z-index: 60;
+.gateway-head .subtitle {
+  font-size: 0.86rem;
+}
+
+.gateway-methods {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.gateway-method {
+  border: 1px solid rgba(26, 35, 32, 0.18);
+  background: #ffffff;
+  color: #21423e;
+  border-radius: 10px;
+  padding: 0.56rem 0.65rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.gateway-method:hover {
+  border-color: rgba(15, 118, 110, 0.5);
+}
+
+.gateway-method.active {
+  background: linear-gradient(145deg, #0f766e, #0a5c56);
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: 0 8px 14px rgba(15, 118, 110, 0.28);
+}
+
+.gateway-fields {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.gateway-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.gateway-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
 }
 
 .admin-form {

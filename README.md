@@ -37,7 +37,24 @@ If no books exist, the app shows fallback sample books.
 npm run dev
 ```
 
-## 4) Firestore Security Rules (tailored)
+Run payment backend in another terminal:
+
+```bash
+npm run api
+```
+
+## 4) Razorpay Test Mode Setup
+
+1. Create Razorpay account and switch to **Test Mode**.
+2. Copy test credentials:
+   - `RAZORPAY_KEY_ID`
+   - `RAZORPAY_KEY_SECRET`
+3. Put them in `.env`.
+4. Checkout on Cart page:
+   - `UPI` / `Card` uses Razorpay
+   - `COD` keeps no-gateway flow
+
+## 5) Firestore Security Rules (tailored)
 
 This project includes strict rules in `firestore.rules`:
 - `books`: public read, admin-only write (`request.auth.token.admin == true`)
