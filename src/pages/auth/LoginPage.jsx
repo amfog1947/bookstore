@@ -2,8 +2,31 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
+function getAuthErrorMessage(err, fallback) {
+  const code = err?.code || "";
+  if (code === "auth/invalid-credential" || code === "auth/wrong-password" || code === "auth/user-not-found") {
+    return "Invalid email or password.";
+  }
+  if (code === "auth/too-many-requests") {
+    return "Too many attempts. Try again later.";
+  }
+  if (code === "auth/popup-closed-by-user") {
+    return "Google sign-in popup was closed.";
+  }
+  if (code === "auth/popup-blocked") {
+    return "Popup blocked. Allow popups or try again.";
+  }
+  if (code === "auth/unauthorized-domain") {
+    return "Domain not authorized in Firebase. Add this domain in Firebase Auth settings.";
+  }
+  if (code === "auth/operation-not-allowed") {
+    return "Google sign-in is disabled in Firebase console.";
+  }
+  return fallback;
+}
+
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, googleSignIn } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -19,7 +42,20 @@ export default function LoginPage() {
       await login(email, password);
       navigate("/");
     } catch (err) {
-      setError("Login failed. Please check your credentials.");
+      setError(getAuthErrorMessage(err, "Login failed. Please check your credentials."));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogle = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      await googleSignIn();
+      navigate("/");
+    } catch (err) {
+      setError(getAuthErrorMessage(err, "Google sign-in failed. Please try again."));
     } finally {
       setLoading(false);
     }
@@ -48,6 +84,9 @@ export default function LoginPage() {
           {error && <p className="error">{error}</p>}
           <button className="btn" disabled={loading}>
             {loading ? "Logging in..." : "Login"}
+          </button>
+          <button type="button" className="btn ghost" disabled={loading} onClick={handleGoogle}>
+            Continue with Google
           </button>
         </form>
         <p>

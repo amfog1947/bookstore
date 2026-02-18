@@ -36,3 +36,4 @@ export default function BookCard({ book, onAdd, onToggleWishlist, isWishlisted }
     </article>
   );
 }
+

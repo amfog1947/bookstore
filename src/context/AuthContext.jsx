@@ -1,7 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import {
   createUserWithEmailAndPassword,
+  GoogleAuthProvider,
+  getRedirectResult,
   onAuthStateChanged,
+  signInWithRedirect,
+  signInWithPopup,
   signInWithEmailAndPassword,
   signOut,
 } from "firebase/auth";
@@ -15,6 +19,13 @@ export function AuthProvider({ children }) {
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(true);
+
+  useEffect(() => {
+    // Handles Google redirect flow return on mobile browsers.
+    getRedirectResult(auth).catch(() => {
+      // Auth pages handle user-visible errors.
+    });
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -40,6 +51,47 @@ export function AuthProvider({ children }) {
     });
 
     return unsubscribe;
+  }, []);
+
+  const upsertUserProfile = useCallback(async (user) => {
+    const userRef = doc(db, "users", user.uid);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+      const payload = {
+        uid: user.uid,
+        email: user.email || "",
+        fullName: user.displayName || "",
+        phone: user.phoneNumber || "",
+        address: "",
+        role: "customer",
+        createdAt: serverTimestamp(),
+        lastLoginAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+      await setDoc(userRef, payload);
+      setUserProfile({
+        uid: user.uid,
+        email: user.email || "",
+        fullName: user.displayName || "",
+        phone: user.phoneNumber || "",
+        address: "",
+        role: "customer",
+      });
+      return;
+    }
+
+    await setDoc(
+      userRef,
+      {
+        email: user.email || "",
+        fullName: userSnap.data()?.fullName || user.displayName || "",
+        phone: userSnap.data()?.phone || user.phoneNumber || "",
+        lastLoginAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+    setUserProfile({ ...userSnap.data(), email: user.email || "" });
   }, []);
 
   const signup = useCallback(async (email, password) => {
@@ -70,43 +122,31 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (email, password) => {
     const cred = await signInWithEmailAndPassword(auth, email, password);
-    const userRef = doc(db, "users", cred.user.uid);
-    const userSnap = await getDoc(userRef);
-
-    if (!userSnap.exists()) {
-      await setDoc(userRef, {
-        uid: cred.user.uid,
-        email: cred.user.email,
-        fullName: "",
-        phone: "",
-        address: "",
-        role: "customer",
-        createdAt: serverTimestamp(),
-        lastLoginAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
-      setUserProfile({
-        uid: cred.user.uid,
-        email: cred.user.email,
-        fullName: "",
-        phone: "",
-        address: "",
-        role: "customer",
-      });
-    } else {
-      await setDoc(
-        userRef,
-        {
-          email: cred.user.email,
-          lastLoginAt: serverTimestamp(),
-        },
-        { merge: true }
-      );
-      setUserProfile({ ...userSnap.data(), email: cred.user.email });
-    }
+    await upsertUserProfile(cred.user);
 
     return cred;
-  }, []);
+  }, [upsertUserProfile]);
+
+  const googleSignIn = useCallback(async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      const cred = await signInWithPopup(auth, provider);
+      await upsertUserProfile(cred.user);
+      return cred;
+    } catch (error) {
+      const code = error?.code || "";
+      if (
+        code === "auth/popup-blocked" ||
+        code === "auth/popup-closed-by-user" ||
+        code === "auth/cancelled-popup-request" ||
+        code === "auth/operation-not-supported-in-this-environment"
+      ) {
+        await signInWithRedirect(auth, provider);
+        return null;
+      }
+      throw error;
+    }
+  }, [upsertUserProfile]);
 
   const updateProfileDetails = useCallback(async (values) => {
     if (!currentUser) return;
@@ -132,10 +172,11 @@ export function AuthProvider({ children }) {
       profileLoading,
       signup,
       login,
+      googleSignIn,
       updateProfileDetails,
       logout,
     }),
-    [currentUser, login, logout, profileLoading, signup, updateProfileDetails, userProfile]
+    [currentUser, googleSignIn, login, logout, profileLoading, signup, updateProfileDetails, userProfile]
   );
 
   return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>;

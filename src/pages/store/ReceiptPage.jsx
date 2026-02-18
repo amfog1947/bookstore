@@ -13,27 +13,52 @@ function toSafePdfText(value) {
     .replace(/[^\x20-\x7E]/g, "?");
 }
 
+function byteLength(value) {
+  return new TextEncoder().encode(value).length;
+}
+
 function buildSimplePdf(lines) {
-  const contentLines = ["BT", "/F1 12 Tf", "50 790 Td"];
+  const perPage = 42;
+  const pages = [];
+  for (let i = 0; i < lines.length; i += perPage) {
+    pages.push(lines.slice(i, i + perPage));
+  }
 
-  lines.forEach((line, index) => {
-    if (index === 0) {
-      contentLines.push(`(${toSafePdfText(line)}) Tj`);
-    } else {
-      contentLines.push(`0 -16 Td (${toSafePdfText(line)}) Tj`);
-    }
-  });
-
-  contentLines.push("ET");
-  const stream = `${contentLines.join("\n")}\n`;
+  const fontObj = 3;
+  const firstPageObj = 4;
+  const firstContentObj = firstPageObj + pages.length;
+  const kids = pages.map((_, index) => `${firstPageObj + index} 0 R`).join(" ");
 
   const objects = [
     "1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n",
-    "2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj\n",
-    "3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 5 0 R /Resources << /Font << /F1 4 0 R >> >> >> endobj\n",
-    "4 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Courier >> endobj\n",
-    `5 0 obj << /Length ${stream.length} >> stream\n${stream}endstream\nendobj\n`,
+    `2 0 obj << /Type /Pages /Kids [${kids}] /Count ${pages.length} >> endobj\n`,
+    `3 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Courier >> endobj\n`,
   ];
+
+  pages.forEach((_, index) => {
+    const pageObjId = firstPageObj + index;
+    const contentObjId = firstContentObj + index;
+    objects.push(
+      `${pageObjId} 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents ${contentObjId} 0 R /Resources << /Font << /F1 ${fontObj} 0 R >> >> >> endobj\n`
+    );
+  });
+
+  pages.forEach((pageLines, pageIndex) => {
+    const contentLines = ["BT", "/F1 12 Tf", "50 790 Td"];
+    pageLines.forEach((line, index) => {
+      if (index === 0) {
+        contentLines.push(`(${toSafePdfText(line)}) Tj`);
+      } else {
+        contentLines.push(`0 -16 Td (${toSafePdfText(line)}) Tj`);
+      }
+    });
+    contentLines.push("ET");
+    const stream = `${contentLines.join("\n")}\n`;
+    const contentObjId = firstContentObj + pageIndex;
+    objects.push(
+      `${contentObjId} 0 obj << /Length ${byteLength(stream)} >> stream\n${stream}endstream\nendobj\n`
+    );
+  });
 
   let pdf = "%PDF-1.4\n";
   const offsets = [0];

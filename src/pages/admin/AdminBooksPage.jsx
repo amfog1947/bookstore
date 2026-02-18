@@ -11,6 +11,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { db } from "../../firebase";
+import { fallbackBooks } from "../../data/fallbackBooks";
 import { formatInr } from "../../utils/format";
 
 const initialForm = {
@@ -27,13 +28,22 @@ export default function AdminBooksPage() {
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   const fetchBooks = async () => {
     setLoading(true);
+    setError("");
     try {
       const q = query(collection(db, "books"), orderBy("title"));
       const snap = await getDocs(q);
-      setBooks(snap.docs.map((book) => ({ id: book.id, ...book.data() })));
+      if (snap.empty) {
+        setBooks(fallbackBooks.map((book) => ({ ...book, _fallback: true })));
+      } else {
+        setBooks(snap.docs.map((book) => ({ id: book.id, ...book.data(), _fallback: false })));
+      }
+    } catch (err) {
+      setError("Could not read books from Firebase. Showing fallback books.");
+      setBooks(fallbackBooks.map((book) => ({ ...book, _fallback: true })));
     } finally {
       setLoading(false);
     }
@@ -46,6 +56,7 @@ export default function AdminBooksPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
+    setError("");
     const payload = {
       title: form.title.trim(),
       author: form.author.trim(),
@@ -68,6 +79,8 @@ export default function AdminBooksPage() {
       setForm(initialForm);
       setEditingId(null);
       await fetchBooks();
+    } catch (err) {
+      setError("Save failed. Check Firebase rules and admin role.");
     } finally {
       setSubmitting(false);
     }
@@ -85,13 +98,19 @@ export default function AdminBooksPage() {
   };
 
   const handleDelete = async (id) => {
-    await deleteDoc(doc(db, "books", id));
-    await fetchBooks();
+    try {
+      setError("");
+      await deleteDoc(doc(db, "books", id));
+      await fetchBooks();
+    } catch (err) {
+      setError("Delete failed. Check Firebase rules and admin role.");
+    }
   };
 
   return (
     <section className="page-stack">
       <h1>Admin Book Manager</h1>
+      {error ? <p className="error">{error}</p> : null}
 
       <form className="admin-form reveal" onSubmit={handleSubmit}>
         <input
@@ -162,10 +181,20 @@ export default function AdminBooksPage() {
               <div className="order-actions">
                 <p className="price">{formatInr(book.price || 0)}</p>
                 <div className="admin-actions">
-                  <button className="btn" onClick={() => handleEdit(book)}>
+                  <button
+                    className="btn"
+                    onClick={() => handleEdit(book)}
+                    disabled={book._fallback}
+                    title={book._fallback ? "Fallback books cannot be edited" : "Edit"}
+                  >
                     Edit
                   </button>
-                  <button className="btn ghost" onClick={() => handleDelete(book.id)}>
+                  <button
+                    className="btn ghost"
+                    onClick={() => handleDelete(book.id)}
+                    disabled={book._fallback}
+                    title={book._fallback ? "Fallback books cannot be deleted" : "Delete"}
+                  >
                     Delete
                   </button>
                 </div>

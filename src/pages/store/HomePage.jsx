@@ -53,8 +53,8 @@ function CustomSelect({ label, value, options, onChange }) {
 }
 
 export default function HomePage() {
-  const [books, setBooks] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [books, setBooks] = useState(fallbackBooks);
+  const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [sortBy, setSortBy] = useState("title");
@@ -71,23 +71,29 @@ export default function HomePage() {
 
   useEffect(() => {
     const fetchBooks = async () => {
+      setLoading(true);
       try {
         const q = query(collection(db, "books"), orderBy("title"));
         const snap = await getDocs(q);
 
-        if (snap.empty) {
-          setBooks(fallbackBooks);
-        } else {
-          setBooks(
-            snap.docs.map((doc) => ({
-              id: doc.id,
-              category: "General",
-              imageUrl: `https://picsum.photos/seed/book-${doc.id}/460/620`,
-              description:
-                "This book gives practical concepts for developers. It explains ideas with clear examples and real scenarios. You can apply these techniques in projects and interviews. It helps improve architecture, coding style, and engineering decisions. This title is useful for both students and professionals.",
-              ...doc.data(),
-            }))
+        if (!snap.empty) {
+          const remoteBooks = snap.docs.map((doc) => ({
+            id: doc.id,
+            category: "General",
+            imageUrl: `https://picsum.photos/seed/book-${doc.id}/460/620`,
+            description:
+              "This book gives practical concepts for developers. It explains ideas with clear examples and real scenarios. You can apply these techniques in projects and interviews. It helps improve architecture, coding style, and engineering decisions. This title is useful for both students and professionals.",
+            ...doc.data(),
+          }));
+
+          const seen = new Set(
+            remoteBooks.map((book) => `${(book.title || "").toLowerCase()}::${(book.author || "").toLowerCase()}`)
           );
+          const extraFallback = fallbackBooks.filter(
+            (book) => !seen.has(`${(book.title || "").toLowerCase()}::${(book.author || "").toLowerCase()}`)
+          );
+
+          setBooks([...remoteBooks, ...extraFallback]);
         }
       } catch (error) {
         setBooks(fallbackBooks);
@@ -228,7 +234,7 @@ export default function HomePage() {
       </section>
 
       <section>
-        {loading ? (
+        {loading && !books.length ? (
           <p>Loading books...</p>
         ) : filteredBooks.length ? (
           <div className="grid">
