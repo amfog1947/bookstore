@@ -67,7 +67,7 @@ export default function HomePage() {
   const [recLoading, setRecLoading] = useState(true);
   const { currentUser, userProfile } = useAuth();
   const { addToCart } = useCart();
-  const { isWishlisted, toggleWishlist } = useWishlist();
+  const { wishlistBookIds, toggleWishlist } = useWishlist();
 
   useEffect(() => {
     const fetchBooks = async () => {
@@ -244,7 +244,7 @@ export default function HomePage() {
                 book={book}
                 onAdd={addToCart}
                 onToggleWishlist={toggleWishlist}
-                isWishlisted={isWishlisted(book.id)}
+                isWishlisted={wishlistBookIds.has(book.id)}
               />
             ))}
           </div>

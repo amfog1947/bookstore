@@ -1,4 +1,4 @@
-import shelfVerseLogo from "../../shelfverse-logo.png.png";
+import shelfVerseLogo from "../../assets/shelfverse-logo.svg";
 
 export default function SplashScreen() {
   return (

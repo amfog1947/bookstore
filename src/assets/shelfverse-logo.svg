@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 220" role="img" aria-label="ShelfVerse logo">
+  <defs>
+    <linearGradient id="svBg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#16a394" />
+      <stop offset="100%" stop-color="#0a5c56" />
+    </linearGradient>
+    <linearGradient id="svRing" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#ecfffb" stop-opacity="0.95" />
+      <stop offset="100%" stop-color="#d6f6ef" stop-opacity="0.95" />
+    </linearGradient>
+  </defs>
+  <rect width="220" height="220" rx="44" fill="url(#svBg)" />
+  <circle cx="110" cy="108" r="66" fill="#0d6f68" stroke="#eafcf7" stroke-opacity="0.45" stroke-width="2" />
+  <ellipse cx="110" cy="112" rx="92" ry="20" fill="none" stroke="url(#svRing)" stroke-width="12" />
+  <rect x="78" y="78" width="14" height="58" rx="3" fill="#eafff9" fill-opacity="0.95" />
+  <rect x="96" y="72" width="14" height="64" rx="3" fill="#eafff9" fill-opacity="0.95" />
+  <rect x="114" y="84" width="14" height="52" rx="3" fill="#eafff9" fill-opacity="0.95" />
+  <rect x="132" y="76" width="14" height="60" rx="3" fill="#eafff9" fill-opacity="0.95" />
+  <text x="110" y="191" text-anchor="middle" font-size="30" font-weight="700" fill="#ecfffb" font-family="Manrope, Segoe UI, Arial, sans-serif">SV</text>
+</svg>

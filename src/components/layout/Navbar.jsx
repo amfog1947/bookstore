@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
 import { useWishlist } from "../../context/WishlistContext";
-import shelfVerseLogo from "../../shelfverse-logo.png.png";
+import shelfVerseLogo from "../../assets/shelfverse-logo.svg";
 
 export default function Navbar() {
   const { currentUser, userProfile, logout, isAdmin } = useAuth();

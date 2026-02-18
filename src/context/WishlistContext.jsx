@@ -49,6 +49,7 @@ export function WishlistProvider({ children }) {
     (bookId) => wishlistItems.some((item) => item.bookId === bookId),
     [wishlistItems]
   );
+  const wishlistBookIds = useMemo(() => new Set(wishlistItems.map((item) => item.bookId)), [wishlistItems]);
 
   const toggleWishlist = useCallback(async (book) => {
     if (!currentUser) return;
@@ -90,12 +91,13 @@ export function WishlistProvider({ children }) {
   const value = useMemo(
     () => ({
       wishlistItems,
+      wishlistBookIds,
       wishlistCount: wishlistItems.length,
       isWishlisted,
       toggleWishlist,
       loading,
     }),
-    [isWishlisted, loading, toggleWishlist, wishlistItems]
+    [isWishlisted, loading, toggleWishlist, wishlistBookIds, wishlistItems]
   );
 
   return <WishlistContext.Provider value={value}>{children}</WishlistContext.Provider>;

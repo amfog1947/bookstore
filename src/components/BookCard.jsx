@@ -1,7 +1,8 @@
+import { memo } from "react";
 import { Link } from "react-router-dom";
 import { formatInr } from "../utils/format";
 
-export default function BookCard({ book, onAdd, onToggleWishlist, isWishlisted }) {
+function BookCard({ book, onAdd, onToggleWishlist, isWishlisted }) {
   return (
     <article className="book-card reveal">
       <Link to={`/book/${book.id}`} className="book-cover-link">
@@ -10,6 +11,7 @@ export default function BookCard({ book, onAdd, onToggleWishlist, isWishlisted }
           src={book.imageUrl || `https://picsum.photos/seed/book-${book.id}/460/620`}
           alt={`${book.title} cover`}
           loading="lazy"
+          decoding="async"
         />
       </Link>
       <div className="book-top-row">
@@ -36,4 +38,6 @@ export default function BookCard({ book, onAdd, onToggleWishlist, isWishlisted }
     </article>
   );
 }
+
+export default memo(BookCard);
 

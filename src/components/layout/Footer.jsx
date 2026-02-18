@@ -1,6 +1,6 @@
 ﻿import { Link } from "react-router-dom";
 
-import shelfVerseLogo from "../../shelfverse-logo.png.png";
+import shelfVerseLogo from "../../assets/shelfverse-logo.svg";
 
 export default function Footer() {
   const year = new Date().getFullYear();

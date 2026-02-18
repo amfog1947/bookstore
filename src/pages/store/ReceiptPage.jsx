@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { db } from "../../firebase";
 import { formatDateDDMMYYYY, formatInr } from "../../utils/format";
-import shelfVerseLogo from "../../shelfverse-logo.png.png";
+import shelfVerseLogo from "../../assets/shelfverse-logo.svg";
 
 function toSafePdfText(value) {
   return String(value)
@@ -18,7 +18,15 @@ function byteLength(value) {
 }
 
 function buildSimplePdf(lines) {
-  const perPage = 42;
+  const pageWidth = 420;
+  const pageHeight = 595;
+  const marginX = 68;
+  const marginTop = 34;
+  const marginBottom = 28;
+  const fontSize = 14;
+  const lineGap = 20;
+  const usableHeight = pageHeight - marginTop - marginBottom;
+  const perPage = Math.max(1, Math.floor(usableHeight / lineGap));
   const pages = [];
   for (let i = 0; i < lines.length; i += perPage) {
     pages.push(lines.slice(i, i + perPage));
@@ -39,17 +47,17 @@ function buildSimplePdf(lines) {
     const pageObjId = firstPageObj + index;
     const contentObjId = firstContentObj + index;
     objects.push(
-      `${pageObjId} 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents ${contentObjId} 0 R /Resources << /Font << /F1 ${fontObj} 0 R >> >> >> endobj\n`
+      `${pageObjId} 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Contents ${contentObjId} 0 R /Resources << /Font << /F1 ${fontObj} 0 R >> >> >> endobj\n`
     );
   });
 
   pages.forEach((pageLines, pageIndex) => {
-    const contentLines = ["BT", "/F1 12 Tf", "50 790 Td"];
+    const contentLines = ["BT", `/F1 ${fontSize} Tf`, `${marginX} ${pageHeight - marginTop} Td`];
     pageLines.forEach((line, index) => {
       if (index === 0) {
         contentLines.push(`(${toSafePdfText(line)}) Tj`);
       } else {
-        contentLines.push(`0 -16 Td (${toSafePdfText(line)}) Tj`);
+        contentLines.push(`0 -${lineGap} Td (${toSafePdfText(line)}) Tj`);
       }
     });
     contentLines.push("ET");
