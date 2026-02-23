@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 
 export default function SettingsPage() {
@@ -8,6 +8,12 @@ export default function SettingsPage() {
   const [address, setAddress] = useState(userProfile?.address || "");
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState("");
+
+  useEffect(() => {
+    setFullName(userProfile?.fullName || "");
+    setPhone(userProfile?.phone || "");
+    setAddress(userProfile?.address || "");
+  }, [userProfile]);
 
   const handleSave = async (e) => {
     e.preventDefault();

@@ -1,9 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import {
+  browserLocalPersistence,
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
   getRedirectResult,
   onAuthStateChanged,
+  setPersistence,
   signInWithRedirect,
   signInWithPopup,
   signInWithEmailAndPassword,
@@ -24,6 +26,11 @@ export function AuthProvider({ children }) {
     // Handles Google redirect flow return on mobile browsers.
     getRedirectResult(auth).catch(() => {
       // Auth pages handle user-visible errors.
+    });
+
+    // Keep user logged in across reloads and direct URL opens.
+    setPersistence(auth, browserLocalPersistence).catch(() => {
+      // Fallback to Firebase default behavior if browser blocks persistence.
     });
   }, []);
 
@@ -94,14 +101,17 @@ export function AuthProvider({ children }) {
     setUserProfile({ ...userSnap.data(), email: user.email || "" });
   }, []);
 
-  const signup = useCallback(async (email, password) => {
+  const signup = useCallback(async (email, password, details = {}) => {
+    const fullName = String(details.fullName || "").trim();
+    const phone = String(details.phone || "").trim();
+    const address = String(details.address || "").trim();
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     const payload = {
       uid: cred.user.uid,
       email: cred.user.email,
-      fullName: "",
-      phone: "",
-      address: "",
+      fullName,
+      phone,
+      address,
       role: "customer",
       createdAt: serverTimestamp(),
       lastLoginAt: serverTimestamp(),
@@ -112,9 +122,9 @@ export function AuthProvider({ children }) {
     setUserProfile({
       uid: cred.user.uid,
       email: cred.user.email,
-      fullName: "",
-      phone: "",
-      address: "",
+      fullName,
+      phone,
+      address,
       role: "customer",
     });
     return cred;

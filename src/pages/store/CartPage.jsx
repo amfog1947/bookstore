@@ -32,6 +32,27 @@ export default function CartPage() {
     }
   }, [userProfile?.address]);
 
+  const validatePaymentFields = () => {
+    if (!shippingAddress.trim()) {
+      setError("Please add shipping address.");
+      return false;
+    }
+
+    if (paymentMethod === "UPI" && !upiId.trim()) {
+      setError("Enter UPI ID for demo payment.");
+      return false;
+    }
+
+    if (paymentMethod === "CARD") {
+      if (!cardName.trim() || !cardNumber.trim() || !cardExpiry.trim() || !cardCvv.trim()) {
+        setError("Enter card details for demo payment.");
+        return false;
+      }
+    }
+
+    return true;
+  };
+
   const createPurchaseReceipt = async (payment) => {
     const receiptRef = await addDoc(collection(db, "purchases"), {
       userId: currentUser.uid,
@@ -40,6 +61,7 @@ export default function CartPage() {
       total,
       shippingAddress: shippingAddress.trim(),
       payment,
+      deliveryChannel: "email-html-pdf",
       createdAt: serverTimestamp(),
     });
 
@@ -52,22 +74,7 @@ export default function CartPage() {
       return;
     }
 
-    if (!shippingAddress.trim()) {
-      setError("Please add shipping address.");
-      return;
-    }
-
-    if (paymentMethod === "UPI" && !upiId.trim()) {
-      setError("Enter UPI ID for demo payment.");
-      return;
-    }
-
-    if (paymentMethod === "CARD") {
-      if (!cardName.trim() || !cardNumber.trim() || !cardExpiry.trim() || !cardCvv.trim()) {
-        setError("Enter card details for demo payment.");
-        return;
-      }
-    }
+    if (!validatePaymentFields()) return;
 
     setSubmitting(true);
     setError("");

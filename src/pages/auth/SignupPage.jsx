@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { sendAuthOtp, verifyAuthOtp } from "../../utils/authOtp";
 
 function getAuthErrorMessage(err, fallback) {
   const code = err?.code || "";
@@ -32,10 +33,32 @@ export default function SignupPage() {
   const { signup, googleSignIn } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [otpInput, setOtpInput] = useState("");
+  const [otpRequested, setOtpRequested] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [otpStatus, setOtpStatus] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const handleSendOtp = () => {
+    const result = sendAuthOtp(email, "signup");
+    setOtpStatus(result.message);
+    setOtpRequested(result.ok);
+    if (!result.ok) {
+      setOtpVerified(false);
+    }
+  };
+
+  const handleVerifyOtp = () => {
+    const result = verifyAuthOtp(email, otpInput, "signup");
+    setOtpStatus(result.message);
+    setOtpVerified(result.ok);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -51,10 +74,20 @@ export default function SignupPage() {
       return;
     }
 
+    if (!phone.trim() || !address.trim()) {
+      setError("Phone and address are required.");
+      return;
+    }
+
+    if (!otpRequested || !otpVerified) {
+      setError("Verify OTP before signup.");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      await signup(email, password);
+      await signup(email, password, { fullName, phone, address });
       navigate("/");
     } catch (err) {
       setError(getAuthErrorMessage(err, "Signup failed. Try a different email."));
@@ -97,12 +130,43 @@ export default function SignupPage() {
             required
           />
           <input
+            placeholder="Full Name"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+          />
+          <input
+            placeholder="Phone Number"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            required
+          />
+          <input
+            placeholder="Address"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            required
+          />
+          <input
             type="password"
             placeholder="Confirm Password"
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
             required
           />
+          <div className="auth-otp-row">
+            <button type="button" className="btn ghost" onClick={handleSendOtp}>
+              {otpRequested ? "Resend OTP" : "Send OTP"}
+            </button>
+            <input
+              placeholder="Enter OTP"
+              value={otpInput}
+              onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, "").slice(0, 6))}
+            />
+            <button type="button" className="btn ghost" onClick={handleVerifyOtp}>
+              Verify OTP
+            </button>
+          </div>
+          {otpStatus ? <p className={otpVerified ? "gateway-note gateway-ok" : "gateway-note"}>{otpStatus}</p> : null}
           {error && <p className="error">{error}</p>}
           <button className="btn" disabled={loading}>
             {loading ? "Creating account..." : "Signup"}

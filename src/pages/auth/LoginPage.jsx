@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { sendAuthOtp, verifyAuthOtp } from "../../utils/authOtp";
 
 function getAuthErrorMessage(err, fallback) {
   const code = err?.code || "";
@@ -30,12 +31,37 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [otpInput, setOtpInput] = useState("");
+  const [otpRequested, setOtpRequested] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [otpStatus, setOtpStatus] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const handleSendOtp = () => {
+    const result = sendAuthOtp(email, "login");
+    setOtpStatus(result.message);
+    setOtpRequested(result.ok);
+    if (!result.ok) {
+      setOtpVerified(false);
+    }
+  };
+
+  const handleVerifyOtp = () => {
+    const result = verifyAuthOtp(email, otpInput, "login");
+    setOtpStatus(result.message);
+    setOtpVerified(result.ok);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+
+    if (!otpRequested || !otpVerified) {
+      setError("Verify OTP before login.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -81,6 +107,20 @@ export default function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
+          <div className="auth-otp-row">
+            <button type="button" className="btn ghost" onClick={handleSendOtp}>
+              {otpRequested ? "Resend OTP" : "Send OTP"}
+            </button>
+            <input
+              placeholder="Enter OTP"
+              value={otpInput}
+              onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, "").slice(0, 6))}
+            />
+            <button type="button" className="btn ghost" onClick={handleVerifyOtp}>
+              Verify OTP
+            </button>
+          </div>
+          {otpStatus ? <p className={otpVerified ? "gateway-note gateway-ok" : "gateway-note"}>{otpStatus}</p> : null}
           {error && <p className="error">{error}</p>}
           <button className="btn" disabled={loading}>
             {loading ? "Logging in..." : "Login"}

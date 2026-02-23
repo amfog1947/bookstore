@@ -91,6 +91,15 @@ function formatInrPdf(value) {
   return `INR ${Number(value || 0).toFixed(2)}`;
 }
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function wrapPdfText(value, maxChars = 40) {
   const words = String(value || "").split(/\s+/).filter(Boolean);
   const lines = [];
@@ -153,6 +162,89 @@ function downloadReceiptPdf(receipt) {
   link.download = `receipt-${receipt.id}.pdf`;
   link.click();
   URL.revokeObjectURL(link.href);
+}
+
+function buildReceiptHtml(receipt, date) {
+  const itemRows = (receipt.items || [])
+    .map(
+      (item) => `
+      <tr>
+        <td>${escapeHtml(item.title)} x ${escapeHtml(item.quantity)}</td>
+        <td style="text-align:right;">${escapeHtml(formatInr(item.price * item.quantity))}</td>
+      </tr>`
+    )
+    .join("");
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ShelfVerse Receipt ${escapeHtml(receipt.id)}</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; color: #1a2320; }
+    .wrap { max-width: 760px; margin: 0 auto; border: 1px solid #d9e6e2; border-radius: 12px; padding: 20px; }
+    .title { color: #0f766e; margin: 0 0 8px; }
+    .meta p { margin: 4px 0; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    td, th { border-bottom: 1px solid #e5ece9; padding: 8px; }
+    th { text-align: left; color: #0a5c56; }
+    .total { margin-top: 14px; font-size: 18px; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1 class="title">ShelfVerse - Purchase Receipt</h1>
+    <div class="meta">
+      <p><strong>Receipt ID:</strong> ${escapeHtml(receipt.id)}</p>
+      <p><strong>Date:</strong> ${escapeHtml(formatDateDDMMYYYY(date))}</p>
+      <p><strong>Buyer Email:</strong> ${escapeHtml(receipt.buyerEmail || "N/A")}</p>
+      <p><strong>Shipping Address:</strong> ${escapeHtml(receipt.shippingAddress || "N/A")}</p>
+      <p><strong>Payment Method:</strong> ${escapeHtml(receipt.payment?.method || "N/A")}</p>
+      <p><strong>Payment Ref:</strong> ${escapeHtml(receipt.payment?.reference || "N/A")}</p>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th style="text-align:right;">Amount</th>
+        </tr>
+      </thead>
+      <tbody>${itemRows}</tbody>
+    </table>
+    <p class="total">Total Paid: ${escapeHtml(formatInr(receipt.total || 0))}</p>
+  </div>
+</body>
+</html>`;
+}
+
+function downloadReceiptHtml(receipt, date) {
+  const html = buildReceiptHtml(receipt, date);
+  const blob = new Blob([html], { type: "text/html" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `receipt-${receipt.id}.html`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+function openReceiptEmailDraft(receipt, date) {
+  const subject = encodeURIComponent(`ShelfVerse Receipt ${receipt.id}`);
+  const lines = [
+    "Hello,",
+    "",
+    "Your order has been placed successfully.",
+    `Receipt ID: ${receipt.id}`,
+    `Date: ${formatDateDDMMYYYY(date)}`,
+    `Total Paid: ${formatInr(receipt.total || 0)}`,
+    `Payment Method: ${receipt.payment?.method || "N/A"}`,
+    "",
+    "Please keep this email for reference.",
+    "Thanks,",
+    "ShelfVerse",
+  ];
+  const body = encodeURIComponent(lines.join("\n"));
+  window.location.href = `mailto:${receipt.buyerEmail || ""}?subject=${subject}&body=${body}`;
 }
 
 export default function ReceiptPage() {
@@ -240,6 +332,12 @@ export default function ReceiptPage() {
             Download PDF
           </button>
           <div className="receipt-actions-right">
+            <button className="btn ghost" onClick={() => downloadReceiptHtml(receipt, date)}>
+              Download HTML
+            </button>
+            <button className="btn ghost" onClick={() => openReceiptEmailDraft(receipt, date)}>
+              Email Receipt
+            </button>
             <button className="btn ghost" onClick={() => window.print()}>
               Print Receipt
             </button>
